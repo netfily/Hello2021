@@ -1,0 +1,84 @@
+on:
+  push:
+  pull_request:
+  schedule:
+    # run this workflow every Monday at 1PM UTC
+    - cron: "* 13 * * 1"
+
+name: main workflow
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  WEB3_INFURA_PROJECT_ID: 272d125948404ff8a8dc6a573d2015d7
+
+jobs:
+
+  Tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Cache Solidity Installations
+      uses: actions/cache@v1
+      with:
+        path: ~/.solcx
+        key: ${{ runner.os }}-solcx-cache
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v1
+
+    - name: Install Ganache
+      run: npm install -g ganache-cli@6.9.1
+
+    - name: Setup Python 3.8
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - name: Install Requirements
+      run: pip install -r requirements.txt
+
+    - name: Install Dependencies
+      run: brownie pm install OpenZeppelin/openzeppelin-contracts@3.0.1
+
+    - name: Run Unit Tests
+      run: brownie test tests/unit/ -w -n auto
+
+    - name: Run Integration Tests
+      run: brownie test tests/integration/ -w -n auto
+
+  Benchmarks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+
+      - name: Cache Solidity Installations
+        uses: actions/cache@v1
+        with:
+          path: ~/.solcx
+          key: ${{ runner.os }}-solcx-cache
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v1
+
+      - name: Install Ganache
+        run: npm install -g ganache-cli@6.9.1
+
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Install Requirements
+        run: pip install -r requirements.txt
+
+      - name: Install Dependencies
+        run: brownie pm install OpenZeppelin/openzeppelin-contracts@3.0.1
+
+      - name: Run Internal Benchmarks
+        run: brownie run benchmarks/gas_benchmarks --network mainnet-fork
+
+      - name: Run Comparative Benchmarks
+        run: brownie run benchmarks/gas_token_comparison --network mainnet-fork
